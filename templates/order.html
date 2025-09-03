@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Place Your Order</h2>
+<form method="post">
+    <input type="text" name="name" placeholder="Your Name" required><br>
+    <input type="text" name="address" placeholder="Your Address" required><br>
+    <input type="text" name="phone" placeholder="Phone Number" required><br>
+    <button type="submit">Submit Order</button>
+</form>
+{% endblock %}
