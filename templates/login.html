@@ -2,7 +2,7 @@
 {% block content %}
 <div class="card shadow p-4 mx-auto" style="max-width: 400px;">
   <h3 class="text-center mb-3">{{ role }} Login</h3>
-  <form method="POST">
+  <form method="POST">   <!-- ❌ action ki zarurat hi nahi -->
     <div class="mb-3">
       <label>Email</label>
       <input type="email" name="email" class="form-control" required>
@@ -13,5 +13,13 @@
     </div>
     <button type="submit" class="btn btn-primary w-100">Login</button>
   </form>
+  <p class="text-center mt-3">
+    Don’t have an account?
+    {% if role == "Seller" %}
+      <a href="{{ url_for('seller_register') }}">Register here</a>
+    {% else %}
+      <a href="{{ url_for('customer_register') }}">Register here</a>
+    {% endif %}
+  </p>
 </div>
 {% endblock %}
