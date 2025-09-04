@@ -11,12 +11,24 @@ def init_db():
     if not os.path.exists(DB_NAME):
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
+
+        # Seller table
         c.execute("""CREATE TABLE sellers (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         email TEXT UNIQUE,
                         password TEXT
                     )""")
+
+        # Customer table
+        c.execute("""CREATE TABLE customers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT,
+                        email TEXT UNIQUE,
+                        password TEXT
+                    )""")
+
+        # Products table
         c.execute("""CREATE TABLE products (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         seller_id INTEGER,
@@ -25,28 +37,25 @@ def init_db():
                         contact TEXT,
                         FOREIGN KEY(seller_id) REFERENCES sellers(id)
                     )""")
-        c.execute("""CREATE TABLE orders (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        product_id INTEGER,
-                        customer_name TEXT,
-                        customer_address TEXT,
-                        customer_phone TEXT,
-                        FOREIGN KEY(product_id) REFERENCES products(id)
-                    )""")
+
         conn.commit()
         conn.close()
 
+
+# ---------------- Home ----------------
 @app.route('/')
 def index():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT products.id, products.product_name, products.price, products.contact, sellers.name FROM products JOIN sellers ON products.seller_id = sellers.id")
+    c.execute("SELECT products.product_name, products.price, products.contact, sellers.name FROM products JOIN sellers ON products.seller_id = sellers.id")
     products = c.fetchall()
     conn.close()
     return render_template("index.html", products=products)
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+
+# ---------------- Seller Auth ----------------
+@app.route('/seller/register', methods=['GET', 'POST'])
+def seller_register():
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
@@ -57,14 +66,15 @@ def register():
             c.execute("INSERT INTO sellers (name, email, password) VALUES (?, ?, ?)", (name, email, password))
             conn.commit()
             conn.close()
-            return redirect(url_for('login'))
+            return redirect(url_for('seller_login'))
         except:
             conn.close()
             return "Email already registered!"
-    return render_template("register.html")
+    return render_template("register.html", role="Seller")
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+
+@app.route('/seller/login', methods=['GET', 'POST'])
+def seller_login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -76,15 +86,17 @@ def login():
         if seller:
             session['seller_id'] = seller[0]
             session['seller_name'] = seller[1]
-            return redirect(url_for('dashboard'))
+            session['role'] = "seller"
+            return redirect(url_for('seller_dashboard'))
         else:
             return "Invalid credentials!"
-    return render_template("login.html")
+    return render_template("login.html", role="Seller")
 
-@app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
+
+@app.route('/seller/dashboard', methods=['GET', 'POST'])
+def seller_dashboard():
     if 'seller_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('seller_login'))
 
     if request.method == 'POST':
         product_name = request.form['product_name']
@@ -102,25 +114,64 @@ def dashboard():
     c.execute("SELECT product_name, price, contact FROM products WHERE seller_id=?", (session['seller_id'],))
     products = c.fetchall()
     conn.close()
-    return render_template("dashboard.html", seller=session['seller_name'], products=products)
+    return render_template("dashboard.html", seller=session['seller_name'], products=products, role="Seller")
 
-@app.route('/order/<int:product_id>', methods=['GET', 'POST'])
-def order(product_id):
+
+# ---------------- Customer Auth ----------------
+@app.route('/customer/register', methods=['GET', 'POST'])
+def customer_register():
     if request.method == 'POST':
         name = request.form['name']
-        address = request.form['address']
-        phone = request.form['phone']
-
+        email = request.form['email']
+        password = request.form['password']
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
-        c.execute("INSERT INTO orders (product_id, customer_name, customer_address, customer_phone) VALUES (?, ?, ?, ?)",
-                  (product_id, name, address, phone))
-        conn.commit()
-        conn.close()
-        return "Order placed successfully! ✅"
-    
-    return render_template("order.html", product_id=product_id)
+        try:
+            c.execute("INSERT INTO customers (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+            conn.commit()
+            conn.close()
+            return redirect(url_for('customer_login'))
+        except:
+            conn.close()
+            return "Email already registered!"
+    return render_template("register.html", role="Customer")
 
+
+@app.route('/customer/login', methods=['GET', 'POST'])
+def customer_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("SELECT * FROM customers WHERE email=? AND password=?", (email, password))
+        customer = c.fetchone()
+        conn.close()
+        if customer:
+            session['customer_id'] = customer[0]
+            session['customer_name'] = customer[1]
+            session['role'] = "customer"
+            return redirect(url_for('customer_dashboard'))
+        else:
+            return "Invalid credentials!"
+    return render_template("login.html", role="Customer")
+
+
+@app.route('/customer/dashboard')
+def customer_dashboard():
+    if 'customer_id' not in session:
+        return redirect(url_for('customer_login'))
+
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT products.product_name, products.price, products.contact, sellers.name FROM products JOIN sellers ON products.seller_id = sellers.id")
+    products = c.fetchall()
+    conn.close()
+
+    return render_template("customer_dashboard.html", customer=session['customer_name'], products=products, role="Customer")
+
+
+# ---------------- Static Pages ----------------
 @app.route('/about')
 def about():
     return render_template("about.html")
@@ -133,14 +184,14 @@ def vision():
 def contact():
     return render_template("contact.html")
 
+
+# ---------------- Logout ----------------
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
-import os
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-
+    init_db()
+    app.run(host="0.0.0.0", port=5000, debug=True)

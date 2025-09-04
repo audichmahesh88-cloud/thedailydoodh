@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="fw-bold">Welcome, {{ customer }} 👋</h2>
+<p class="text-muted">Here are all available products:</p>
+
+<div class="row">
+  {% for product in products %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ product[0] }}</h5>
+        <p class="card-text">Price: ₹{{ product[1] }}</p>
+        <p class="card-text">Contact: {{ product[2] }}</p>
+        <span class="badge bg-primary">Seller: {{ product[3] }}</span>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p>No products available right now.</p>
+  {% endfor %}
+</div>
+{% endblock %}
