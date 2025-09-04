@@ -1,12 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Available Dairy Products</h1>
-{% for p in products %}
-<div class="card">
-    <h3>{{ p[1] }} - ₹{{ p[2] }}</h3>
-    <p>Seller: {{ p[4] }}</p>
-    <p>Contact: {{ p[3] }}</p>
-    <a href="{{ url_for('order', product_id=p[0]) }}" class="btn">Order Now</a>
+<div class="text-center mb-5">
+  <h1 class="fw-bold">Fresh Milk & Dairy Products 🥛</h1>
+  <p class="text-muted">Connecting you directly with trusted milkmen & dairy sellers in your area.</p>
 </div>
-{% endfor %}
+
+<div class="row">
+  {% for product in products %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ product[0] }}</h5>
+        <p class="card-text">Price: ₹{{ product[1] }}</p>
+        <p class="card-text">Contact: {{ product[2] }}</p>
+        <span class="badge bg-primary">Seller: {{ product[3] }}</span>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-center">No products available right now.</p>
+  {% endfor %}
+</div>
 {% endblock %}
