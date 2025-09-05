@@ -1,44 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="fw-bold">Welcome, {{ seller }} 👋</h2>
-<hr>
+<div class="container">
+  <h2 class="mb-4">Welcome, {{ seller }} 👋</h2>
 
-<div class="row">
-  <div class="col-md-6">
-    <div class="card shadow mb-4">
-      <div class="card-body">
-        <h4 class="fw-bold">Add New Product</h4>
-        <form method="POST">
-          <div class="mb-3">
-            <label>Product Name</label>
-            <input type="text" name="product_name" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label>Price</label>
-            <input type="number" step="0.01" name="price" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label>Contact Info</label>
-            <input type="text" name="contact" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Add Product</button>
-        </form>
-      </div>
+  <h4>Add New Product</h4>
+  <form method="POST" enctype="multipart/form-data" class="mb-5">
+    <div class="mb-3">
+      <label class="form-label">Product Name</label>
+      <input type="text" name="product_name" class="form-control" required>
     </div>
-  </div>
+    <div class="mb-3">
+      <label class="form-label">Price (₹)</label>
+      <input type="number" name="price" class="form-control" step="0.01" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contact</label>
+      <input type="text" name="contact" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Product Image</label>
+      <input type="file" name="image" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-success">Add Product</button>
+  </form>
 
-  <div class="col-md-6">
-    <h4 class="fw-bold">Your Products</h4>
-    <ul class="list-group shadow">
-      {% for p in products %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        {{ p[0] }} - ₹{{ p[1] }}
-        <span class="badge bg-info">{{ p[2] }}</span>
-      </li>
-      {% else %}
-      <li class="list-group-item">No products added yet.</li>
-      {% endfor %}
-    </ul>
+  <h4>Your Products</h4>
+  <div class="row">
+    {% for product in products %}
+      <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+          {% if product[3] %}
+            <img src="{{ url_for('static', filename=product[3].replace('static/', '')) }}" 
+                 class="card-img-top" alt="{{ product[0] }}">
+          {% else %}
+            <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="No image">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ product[0] }}</h5>
+            <p class="card-text">₹{{ product[1] }}</p>
+            <p class="card-text"><small>{{ product[2] }}</small></p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">{{ seller[0] }}'s Shop 🥛</h2>
+  <p><strong>Email:</strong> {{ seller[1] }}</p>
+
+  <h4 class="mt-4">Products</h4>
+  <div class="row">
+    {% for product in products %}
+      <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+          {% if product[4] %}
+            <img src="{{ url_for('static', filename=product[4].replace('static/', '')) }}" 
+                 class="card-img-top" alt="{{ product[1] }}">
+          {% else %}
+            <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="No image">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ product[1] }}</h5>
+            <p class="card-text">Price: ₹{{ product[2] }}</p>
+            <p class="card-text"><small>Contact: {{ product[3] }}</small></p>
+
+            {% if session.get('customer_id') %}
+              <form method="POST" action="{{ url_for('place_order', product_id=product[0]) }}">
+                <input type="number" name="quantity" class="form-control mb-2" value="1" min="1" required>
+                <button type="submit" class="btn btn-primary w-100">🛒 Order Now</button>
+              </form>
+            {% else %}
+              <a href="{{ url_for('customer_login') }}" class="btn btn-outline-primary w-100">Login to Order</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
