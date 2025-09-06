@@ -185,8 +185,9 @@ def customer_dashboard():
 
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    # ✅ seller_id bhi include kar diya
     c.execute("""SELECT products.id, products.product_name, products.price, 
-                        products.contact, products.image, sellers.name
+                        products.contact, products.image, sellers.id, sellers.name
                  FROM products 
                  JOIN sellers ON products.seller_id = sellers.id""")
     products = c.fetchall()

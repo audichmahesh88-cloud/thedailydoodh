@@ -18,7 +18,7 @@
           <div class="card-body">
             <h5 class="card-title">{{ product[1] }}</h5>
             <p class="card-text">Price: ₹{{ product[2] }}</p>
-            <p class="card-text"><small>Seller: {{ product[5] }}</small></p>
+            <p class="card-text"><small>Seller: {{ product[6] }}</small></p>
             <form method="POST" action="{{ url_for('place_order', product_id=product[0]) }}">
               <input type="number" name="quantity" class="form-control mb-2" value="1" min="1" required>
               <button type="submit" class="btn btn-primary w-100">🛒 Buy Now</button>
