@@ -135,10 +135,21 @@ def seller_dashboard():
 
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT product_name, price, contact, image FROM products WHERE seller_id=?", (session['seller_id'],))
+
+    # Seller ke products
+    c.execute("SELECT product_name, price, contact, image, id FROM products WHERE seller_id=?", (session['seller_id'],))
     products = c.fetchall()
+
+    # Seller ke products ke orders
+    c.execute("""SELECT orders.id, products.product_name, customers.name, orders.quantity, orders.status
+                 FROM orders
+                 JOIN products ON orders.product_id = products.id
+                 JOIN customers ON orders.customer_id = customers.id
+                 WHERE products.seller_id=?""", (session['seller_id'],))
+    orders = c.fetchall()
+
     conn.close()
-    return render_template("dashboard.html", seller=session['seller_name'], products=products, role="Seller")
+    return render_template("dashboard.html", seller=session['seller_name'], products=products, orders=orders, role="Seller")
 
 # ---------------- Customer Auth ----------------
 @app.route('/customer/register', methods=['GET', 'POST'])

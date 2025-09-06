@@ -3,6 +3,7 @@
 <div class="container">
   <h2 class="mb-4">Welcome, {{ seller }} 👋</h2>
 
+  <!-- Add Product Form -->
   <h4>Add New Product</h4>
   <form method="POST" enctype="multipart/form-data" class="mb-5">
     <div class="mb-3">
@@ -24,6 +25,7 @@
     <button type="submit" class="btn btn-success">Add Product</button>
   </form>
 
+  <!-- Product List -->
   <h4>Your Products</h4>
   <div class="row">
     {% for product in products %}
@@ -44,5 +46,35 @@
       </div>
     {% endfor %}
   </div>
+
+  <!-- Orders Section -->
+  <h4 class="mt-5">Orders Received</h4>
+  {% if orders %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Product</th>
+          <th>Customer</th>
+          <th>Quantity</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td>#{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+            <td>{{ order[3] }}</td>
+            <td><span class="badge bg-info">{{ order[4] }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No orders yet.</p>
+  {% endif %}
+
 </div>
 {% endblock %}
