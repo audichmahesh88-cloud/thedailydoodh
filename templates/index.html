@@ -8,15 +8,21 @@
 
 <div class="row">
   {% for product in products %}
-  <div class="col-md-4 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">{{ product[0] }}</h5>
-        <p class="card-text">Price: ₹{{ product[1] }}</p>
-        <p class="card-text">Contact: {{ product[2] }}</p>
-        <span class="badge bg-primary">Seller: {{ product[3] }}</span>
-      </div>
-    </div>
+  <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+          {% if product[4] %}
+            <img src="{{ url_for('static', filename=product[4].replace('static/', '')) }}" 
+                 class="card-img-top" alt="{{ product[1] }}">
+          {% else %}
+            <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="No image">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ product[1] }}</h5>
+            <p class="card-text">Price: ₹{{ product[2] }}</p>
+            <p class="card-text"><small>Seller: {{ product[6] }}</small></p>
+            <a href="{{ url_for('seller_profile', seller_id=product[5]) }}" class="btn btn-link">View Seller</a>
+          </div>
+        </div>
   </div>
   {% else %}
   <p class="text-center">No products available right now.</p>
