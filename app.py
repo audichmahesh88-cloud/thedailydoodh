@@ -1,66 +1,67 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
+import psycopg2
 import os
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-DB_NAME = "database.db"
+# Database URL from environment variable
+DB_URL = os.getenv("DATABASE_URL")
 
 # Ensure uploads folder exists
 if not os.path.exists("static/uploads"):
     os.makedirs("static/uploads")
 
+def get_db_connection():
+    conn = psycopg2.connect(DB_URL, sslmode="require")
+    return conn
+
 def init_db():
-    if not os.path.exists(DB_NAME):
-        conn = sqlite3.connect(DB_NAME)
-        c = conn.cursor()
+    conn = get_db_connection()
+    c = conn.cursor()
 
-        # Seller table
-        c.execute("""CREATE TABLE sellers (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT,
-                        email TEXT UNIQUE,
-                        password TEXT
-                    )""")
+    # Seller table
+    c.execute("""CREATE TABLE IF NOT EXISTS sellers (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT,
+                    email TEXT UNIQUE,
+                    password TEXT
+                )""")
 
-        # Customer table
-        c.execute("""CREATE TABLE customers (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT,
-                        email TEXT UNIQUE,
-                        password TEXT
-                    )""")
+    # Customer table
+    c.execute("""CREATE TABLE IF NOT EXISTS customers (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT,
+                    email TEXT UNIQUE,
+                    password TEXT
+                )""")
 
-        # Products table (with image)
-        c.execute("""CREATE TABLE products (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        seller_id INTEGER,
-                        product_name TEXT,
-                        price REAL,
-                        contact TEXT,
-                        image TEXT,
-                        FOREIGN KEY(seller_id) REFERENCES sellers(id)
-                    )""")
+    # Products table (with image)
+    c.execute("""CREATE TABLE IF NOT EXISTS products (
+                    id SERIAL PRIMARY KEY,
+                    seller_id INTEGER REFERENCES sellers(id),
+                    product_name TEXT,
+                    price REAL,
+                    contact TEXT,
+                    image TEXT
+                )""")
 
-        # Orders table
-        c.execute("""CREATE TABLE orders (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        customer_id INTEGER,
-                        product_id INTEGER,
-                        quantity INTEGER,
-                        status TEXT DEFAULT 'Pending',
-                        FOREIGN KEY(customer_id) REFERENCES customers(id),
-                        FOREIGN KEY(product_id) REFERENCES products(id)
-                    )""")
+    # Orders table
+    c.execute("""CREATE TABLE IF NOT EXISTS orders (
+                    id SERIAL PRIMARY KEY,
+                    customer_id INTEGER REFERENCES customers(id),
+                    product_id INTEGER REFERENCES products(id),
+                    quantity INTEGER,
+                    status TEXT DEFAULT 'Pending'
+                )""")
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
 # ---------------- Home ----------------
 @app.route('/')
 def index():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute("""SELECT products.id, products.product_name, products.price, 
                         products.contact, products.image, sellers.id, sellers.name
@@ -77,10 +78,10 @@ def seller_register():
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']
-        conn = sqlite3.connect(DB_NAME)
+        conn = get_db_connection()
         c = conn.cursor()
         try:
-            c.execute("INSERT INTO sellers (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+            c.execute("INSERT INTO sellers (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
             conn.commit()
             conn.close()
             return redirect(url_for('seller_login'))
@@ -94,9 +95,9 @@ def seller_login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        conn = sqlite3.connect(DB_NAME)
+        conn = get_db_connection()
         c = conn.cursor()
-        c.execute("SELECT * FROM sellers WHERE email=? AND password=?", (email, password))
+        c.execute("SELECT * FROM sellers WHERE email=%s AND password=%s", (email, password))
         seller = c.fetchone()
         conn.close()
         if seller:
@@ -126,18 +127,18 @@ def seller_dashboard():
                 image = os.path.join("static/uploads", file.filename)
                 file.save(image)
 
-        conn = sqlite3.connect(DB_NAME)
+        conn = get_db_connection()
         c = conn.cursor()
-        c.execute("INSERT INTO products (seller_id, product_name, price, contact, image) VALUES (?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO products (seller_id, product_name, price, contact, image) VALUES (%s, %s, %s, %s, %s)",
                   (session['seller_id'], product_name, price, contact, image))
         conn.commit()
         conn.close()
 
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
     c = conn.cursor()
 
     # Seller ke products
-    c.execute("SELECT product_name, price, contact, image, id FROM products WHERE seller_id=?", (session['seller_id'],))
+    c.execute("SELECT product_name, price, contact, image, id FROM products WHERE seller_id=%s", (session['seller_id'],))
     products = c.fetchall()
 
     # Seller ke products ke orders
@@ -145,7 +146,7 @@ def seller_dashboard():
                  FROM orders
                  JOIN products ON orders.product_id = products.id
                  JOIN customers ON orders.customer_id = customers.id
-                 WHERE products.seller_id=?""", (session['seller_id'],))
+                 WHERE products.seller_id=%s""", (session['seller_id'],))
     orders = c.fetchall()
 
     conn.close()
@@ -158,10 +159,10 @@ def customer_register():
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']
-        conn = sqlite3.connect(DB_NAME)
+        conn = get_db_connection()
         c = conn.cursor()
         try:
-            c.execute("INSERT INTO customers (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+            c.execute("INSERT INTO customers (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
             conn.commit()
             conn.close()
             return redirect(url_for('customer_login'))
@@ -175,9 +176,9 @@ def customer_login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        conn = sqlite3.connect(DB_NAME)
+        conn = get_db_connection()
         c = conn.cursor()
-        c.execute("SELECT * FROM customers WHERE email=? AND password=?", (email, password))
+        c.execute("SELECT * FROM customers WHERE email=%s AND password=%s", (email, password))
         customer = c.fetchone()
         conn.close()
         if customer:
@@ -194,9 +195,8 @@ def customer_dashboard():
     if 'customer_id' not in session:
         return redirect(url_for('customer_login'))
 
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
     c = conn.cursor()
-    # ✅ seller_id bhi include kar diya
     c.execute("""SELECT products.id, products.product_name, products.price, 
                         products.contact, products.image, sellers.id, sellers.name
                  FROM products 
@@ -207,7 +207,7 @@ def customer_dashboard():
     c.execute("""SELECT orders.id, products.product_name, orders.quantity, orders.status 
                  FROM orders 
                  JOIN products ON orders.product_id = products.id
-                 WHERE orders.customer_id=?""", (session['customer_id'],))
+                 WHERE orders.customer_id=%s""", (session['customer_id'],))
     orders = c.fetchall()
 
     conn.close()
@@ -216,11 +216,11 @@ def customer_dashboard():
 # ---------------- Seller Profile ----------------
 @app.route('/seller/<int:seller_id>')
 def seller_profile(seller_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT name, email FROM sellers WHERE id=?", (seller_id,))
+    c.execute("SELECT name, email FROM sellers WHERE id=%s", (seller_id,))
     seller = c.fetchone()
-    c.execute("SELECT id, product_name, price, contact, image FROM products WHERE seller_id=?", (seller_id,))
+    c.execute("SELECT id, product_name, price, contact, image FROM products WHERE seller_id=%s", (seller_id,))
     products = c.fetchall()
     conn.close()
     return render_template("seller_profile.html", seller=seller, products=products)
@@ -233,9 +233,9 @@ def place_order(product_id):
 
     quantity = int(request.form['quantity'])
 
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("INSERT INTO orders (customer_id, product_id, quantity) VALUES (?, ?, ?)",
+    c.execute("INSERT INTO orders (customer_id, product_id, quantity) VALUES (%s, %s, %s)",
               (session['customer_id'], product_id, quantity))
     conn.commit()
     conn.close()
